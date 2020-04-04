@@ -1,41 +1,43 @@
 // VulkanAppExample.cpp : Este archivo contiene la función "main". La ejecución del programa comienza y termina ahí.
 //
-
-#define GLFW_INCLUDE_VULKAN 
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
 #include <iostream>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include "VulkanRenderer.h"
+
+GLFWwindow* pWindow;
+VulkanRenderer vulkanRenderer;
+
+// Create a window class to store all of this stuff
+void InitWindow(std::string wName = "Test Window", const int width = 800, const int height = 600)
+{
+    
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Switch off OpenGL
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    pWindow = glfwCreateWindow(width, height, wName.c_str(), nullptr, nullptr);
+
+}
+
 
 int main()
 {
+    InitWindow();
     
-    glfwInit(); // Init glfw.
-    
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Switch OFF OpenGL 
-    GLFWwindow* pWindow = glfwCreateWindow(800, 600, "test", nullptr, nullptr);
+    // Create Vulkan Renderer instance;
+    if (vulkanRenderer.Init(pWindow) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-    uint32_t extensionsCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
-    std::cout << "Extension count: " << extensionsCount << std::endl;
-
-    glm::mat4 testMatrix{ 1.0f };
-    glm::vec4 testVector{ 1.0f };
-    auto testResult =  testMatrix * testVector;
-
-
+    // Loop 
     while (!glfwWindowShouldClose(pWindow))
     {
         glfwPollEvents();
-
     }
+
+    vulkanRenderer.cleanup();
 
     glfwDestroyWindow(pWindow);
     glfwTerminate();
-    
 
     return EXIT_SUCCESS;
 }
