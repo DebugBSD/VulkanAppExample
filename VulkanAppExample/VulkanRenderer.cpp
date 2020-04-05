@@ -10,6 +10,7 @@ int VulkanRenderer::Init(GLFWwindow* pWindow)
 
 	try {
 		createInstance();
+		createDebugCallback();
 		getPhysicalDevice();
 		createLogicalDevice();
 	}
@@ -25,6 +26,8 @@ int VulkanRenderer::Init(GLFWwindow* pWindow)
 void VulkanRenderer::cleanup()
 {
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
+	if(validationEnabled)
+		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -34,6 +37,11 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
+	if (validationEnabled && !checkValidationLayerSupport())
+	{
+		throw std::runtime_error("Required validation layers not supported");
+	}
+		
 	// Information about the application itself.
 	// Most data here doesn't affect the program and is for developer convenience
 	VkApplicationInfo appInfo = {};
@@ -64,6 +72,12 @@ void VulkanRenderer::createInstance()
 		instanceExtensions.push_back(glfwExtensions[i]);
 	}
 
+	// if validation enabled, add extension to report validation debug info
+	if (validationEnabled)
+	{
+		instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	}
+
 	// Check instance extensions supported
 	if (!checkInstanceExtensionsSupport(&instanceExtensions))
 	{
@@ -74,14 +88,39 @@ void VulkanRenderer::createInstance()
 	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
 	// TODO: Set up validation layers that instance will use
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = nullptr;
+	if (validationEnabled)
+	{
+		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		createInfo.ppEnabledLayerNames = validationLayers.data();
+	}
+	else
+	{
+		createInfo.enabledLayerCount = 0;
+		createInfo.ppEnabledLayerNames = nullptr;
+	}
 
 	// Create instance
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("ERROR: Failed to create a Vulkan instance");
+	}
+}
+
+void VulkanRenderer::createDebugCallback()
+{
+	if (validationEnabled)
+	{
+		VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+		callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+		callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+		callbackCreateInfo.pfnCallback = debugCallback;
+
+		VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
+		if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create Debug Callback!");
+		}
 	}
 }
 
@@ -176,6 +215,41 @@ bool VulkanRenderer::checkInstanceExtensionsSupport(std::vector<const char*>* ch
 			return false;
 	}
 
+	return true;
+}
+
+bool VulkanRenderer::checkValidationLayerSupport()
+{
+	// Get number of validation layers to create vector of apropiate size
+	uint32_t validationLayerCount = 0;
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+
+	// Check if no validation layers found and we want at least 1
+	if (validationLayerCount == 0 && validationLayers.size() > 0)
+	{
+		return false;
+	}
+
+	// Creeate a list of VkExtensionProperties using count.
+	std::vector<VkLayerProperties> availableLayers(validationLayerCount);
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+
+	// Check if given extensions are in list of available extensions
+	for (const auto& validationLayer : validationLayers)
+	{
+		bool hasLayer = false;
+		for (const auto& availableLayer : availableLayers)
+		{
+			if (!strcmp(validationLayer, availableLayer.layerName))
+			{
+				hasLayer = true;
+				break;
+			}
+		}
+
+		if (!hasLayer)
+			return false;
+	}
 	return true;
 }
 

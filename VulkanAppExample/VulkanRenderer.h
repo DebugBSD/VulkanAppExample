@@ -8,6 +8,8 @@
 
 #include "Utilities.h"
 
+#include "VulkanValidation.h"
+
 class VulkanRenderer
 {
 public:
@@ -24,6 +26,7 @@ private:
 	GLFWwindow* m_pWindow;
 
 	VkInstance instance;
+	VkDebugReportCallbackEXT callback;
 	struct
 	{
 		VkPhysicalDevice physicalDevice;
@@ -35,7 +38,8 @@ private:
 	// Vulkan functions
 	// - Create Functions
 	void createInstance();
-	void createLogicalDevice();;
+	void createDebugCallback();
+	void createLogicalDevice();
 
 	// - Get Functions
 	void getPhysicalDevice();
@@ -43,6 +47,7 @@ private:
 	// - Support Functions
 	// -- Checker functions
 	bool checkInstanceExtensionsSupport(std::vector<const char *> *checkExtensions);
+	bool checkValidationLayerSupport();
 	bool checkDeviceSuitable(VkPhysicalDevice device);
 
 	// -- Getter Functions
