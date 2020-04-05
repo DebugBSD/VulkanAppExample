@@ -6,6 +6,7 @@
 #include <stdexcept> // For checking errors issued by Vulkan.
 #include <vector>
 #include <set>
+#include <algorithm>
 
 #include "Utilities.h"
 
@@ -26,6 +27,8 @@ public:
 private:
 	GLFWwindow* m_pWindow;
 
+	// Vulkan Components
+	// - Main
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
 	struct
@@ -37,6 +40,13 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentationQueue;
 	VkSurfaceKHR surface;
+	VkSwapchainKHR swapchain;
+
+	std::vector<SwapchainImage> swapChainImages;
+
+	// - Utility
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 
 	// Vulkan functions
 	// - Create Functions
@@ -44,6 +54,7 @@ private:
 	void createDebugCallback();
 	void createLogicalDevice();
 	void createSurface();
+	void createSwapChain();
 
 	// - Get Functions
 	void getPhysicalDevice();
@@ -58,5 +69,13 @@ private:
 	// -- Getter Functions
 	QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
 	SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
+
+	// -- Choose function
+	VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &formats);
+	VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+	VkExtent2D chooseBestExtent(const VkSurfaceCapabilitiesKHR &surfaceCapabilities);
+
+	// -- Create functions
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageCreateFlags aspectFlags);
 };
 
